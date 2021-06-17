@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<script>
+
+function SearchApplication() {
+  var input, filter, table, tr, td, x;
+  input = document.getElementById("UserInputCookie");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("ipadresstable");
+  tr = table.getElementsByTagName("tr");
+
+  for (x = 0; x < tr.length; x++) {
+    td = tr[x].getElementsByTagName("td")[0];
+    if (td) {
+      if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+        tr[x].style.display = "";
+      }
+      else {
+        tr[x].style.display = "none";
+      }
+    }
+  }
+}
+
+function SearchIP() {
+  var input, filter, table, tr, td, x;
+  input = document.getElementById("UserInputIP");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("ipadresstable");
+  tr = table.getElementsByTagName("tr");
+
+  for (x = 0; x < tr.length; x++) {
+    td = tr[x].getElementsByTagName("td")[1];
+    if (td) {
+      if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+        tr[x].style.display = "";
+      }
+      else {
+        tr[x].style.display = "none";
+      }
+    }
+  }
+}
+
+function SearchSourceIp() {
+  var input, filter, table, tr, td, x;
+  input = document.getElementById("UserInputSourceIp");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("ipadresstable");
+  tr = table.getElementsByTagName("tr");
+
+  for (x = 0; x < tr.length; x++) {
+    td = tr[x].getElementsByTagName("td")[3];
+    if (td) {
+      if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+        tr[x].style.display = "";
+      }
+      else {
+        tr[x].style.display = "none";
+      }
+    }
+  }
+}
+
+
+</script>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+ <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<body>
+<div class="accordion" id="accordionExample">
+    <table style="width:500px;" class="table table-striped", id="ipadresstable">
+        <tr style="text-align: left">
+            <th><div style="width:100px">Cookie ID
+            <div class="form-group">
+                <input type="text" id="UserInputCookie" onkeyup="SearchApplication()" class="form-control input-lg" autocomplete="off" name="input" placeholder="Zoek op id"  autofocus>
+            </div></div>
+            </th>
+            <th><div style="width:100px">Ip adres
+            <div class="form-group">
+                <input type="text" id="UserInputIP" onkeyup="SearchIP()" class="form-control input-lg" autocomplete="off" name="input" placeholder="Zoek op ids"  autofocus>
+            </div></div>
+            </th>
+            <th>Hash</th>
+            <th>Useragent http</th>
+            <th>Accept</th>
+            <th>Accept encoding</th>
+            <th>Accept language</th>
+            <th>dnt</th>
+            <th>adblocker</th>
+            <th>cookies</th>
+            <th>languagesJS</th>
+            <th>platform</th>
+            <th>plugins</th>
+            <th>screen width</th>
+            <th>screen height</th>
+            <th>screen depth</th>
+            <th>storage local</th>
+            <th>storage session</th>
+            <th>timezone</th>
+            <th>useragent JS</th>
+            <th>mime types</th>
+            <th>WebGLvendor</th>
+            <th>WebGLrenderer</th>
+            <th>fonts</th>
+            <th>canvas</th>
+            <th>audio fingerprint</th>
+        {#    <th>request header</th>#}
+        </tr>
+
+        {% for ip in ipadressen %}
+        <tr>
+            <td>{{ ip.cookie_id }}</td>
+            <td>{{ ip.ipaddress }}</td>
+            <td>{{ ip.hash }}</td>
+            <td>{{ ip.useragenthttp }}</td>
+            <td>{{ ip.accept }}</td>
+            <td>{{ ip.accept_encoding }}</td>
+            <td>{{ ip.accept_language }}</td>
+            <td>{{ ip.dnt }}</td>
+            <td>{{ ip.adblocker }}</td>
+            <td>{{ ip.cookies }}</td>
+            <td>{{ ip.languagesjs }}</td>
+            <td>{{ ip.platform}}</td>
+            <td>{{ ip.plugins }}</td>
+            <td>{{ ip.screenwidth }}</td>
+            <td>{{ ip.screenheight }}</td>
+            <td>{{ ip.screendepth }}</td>
+            <td>{{ ip.storagelocal }}</td>
+            <td>{{ ip.storagesession }}</td>
+            <td>{{ ip.timezone }}</td>
+            <td>{{ ip.useragentjs }}</td>
+            <td>{{ ip.mimetypes }}</td>
+            <td>{{ ip.webGLvendor }}</td>
+            <td>{{ ip.webGLrenderer }}</td>
+            <td><div style="height:180px; overflow-y: auto">{{ ip.fonts }}</div></td>
+{#            <td>#}
+{#                <p>#}
+{#                    <button class="btn btn-secondary" style="width: 150px" type="button" data-toggle="collapse" data-target=#getal{{loop.index}} aria-expanded="false" aria-controls="collapseExample">#}
+{#                        Meer informatie#}
+{#                    </button>#}
+{#                </p>#}
+{#                <div class="collapse" id=getal{{ loop.index }}>#}
+{#                    {{ ip.fonts }}#}
+{#                </div>#}
+        {##}
+{#            </td>#}
+            <td><div style="width:100px; height:180px; overflow-y:auto;overflow-x: auto;">{{ ip.canvasprint }}</div></td>
+            <td>{{ ip.audiofingerprint }}</td>
+        {#    <td>{{ ip.request_header }}</td>#}
+            </tr>
+        {% endfor %}
+    </table>
+
+
+</body>
+</html>

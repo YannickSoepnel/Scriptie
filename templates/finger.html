@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<script type="text/javascript" src="../static/client.min.js"></script>
+<script src="../static/prebid-ads.js"></script>
+<script type="text/javascript">
+    setTimeout(myFunction, 3000)
+
+    function myFunction() {
+        var canvas = document.createElement('canvas');
+        var gl;
+        var debugInfo;
+        var vendor;
+        var renderer;
+        try {
+            gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        } catch (e) {
+        }
+        if (gl) {
+            debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+            renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        }
+
+        const AudioContext =
+            window.OfflineAudioContext ||
+            window.webkitOfflineAudioContext
+        const context = new AudioContext(1, 5000, 44100)
+
+        const oscillator = context.createOscillator()
+        oscillator.type = "triangle"
+        oscillator.frequency.value = 1000
+
+        const compressor = context.createDynamicsCompressor()
+        compressor.threshold.value = -50
+        compressor.knee.value = 40
+        compressor.ratio.value = 12
+        {#compressor.reduction.value = 20#}
+        compressor.attack.value = 0
+        compressor.release.value = 0.2
+
+        oscillator.connect(compressor)
+        compressor.connect(context.destination);
+
+        var samples = new Float32Array()
+        var audioHash = 0;
+
+        oscillator.start()
+        context.oncomplete = event => {
+            // We have only one channel, so we get it by index
+            samples = event.renderedBuffer.getChannelData(0)
+            audioHash = calculateHash(samples)
+            {#console.log('samples')#}
+            {#console.log(audioHash)#}
+            {#setTimeout(calculateHash(samples), 1000)#}
+        };
+        context.startRendering()
+
+        function calculateHash(samples) {
+            let hash = 0
+            for (let i = 0; i < samples.length; ++i) {
+                hash += Math.abs(samples[i])
+            }
+            {#console.log('AudioAPI fingerprint')#}
+            {#console.log(hash)#}
+            {#audioHash = hash#}
+            sendData(hash, vendor, renderer)
+            return hash
+        }
+
+    }
+
+    function sendData(audioHash, vendor, renderer){
+        var client = new ClientJS();
+        var dnt = navigator.doNotTrack
+        var adblocker = 0;
+        var cookies = navigator.cookieEnabled
+        var languagesjs = client.getLanguage()
+        var platform = navigator.platform
+        var plugins = client.getPlugins()
+        var screenwidth = screen.width
+        var screenheight = screen.height
+        var screendepth = screen.colorDepth
+        {# Misschien nog available screen info #}
+        var storagelocal = client.isLocalStorage()
+        var storagesession = client.isSessionStorage()
+        var timezone = client.getTimeZone()
+        var useragentjs = client.getUserAgent()
+        var mimetypes = client.getMimeTypes()
+        var webGLvendor = vendor
+        var webGLrenderer = renderer
+        var fonts = client.getFonts()
+        var canvasprint = client.getCanvasPrint()
+        var audiofingerprint = audioHash
+
+        if( window.canRunAds === undefined){
+            adblocker = 1
+        }
+        else{
+            adblocker = 0
+        }
+        console.log(canvasprint)
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/post', true);
+
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        {#xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8")#}
+
+        xhr.onreadystatechange = function() { // Call a function when the state changes.
+        if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+            // Request finished. Do processing here.
+            }
+        }
+
+        to_send = JSON.stringify({
+            "dnt":dnt,
+            "adblocker": adblocker
+        })
+
+        var data = {};
+        data.firstname = "John";
+        data.lastname  = "Snow";
+        var json = JSON.stringify(data);
+
+        console.log(json)
+        {#xhr.send(to_send);#}
+
+        {#xhr.send(JSON.stringify({ "email": "hello@user.com", "response": { "name": "Tester" } }));#}
+        {#xhr.send("useragent=" + useragentjs + "&platform=" + platform)#}
+        xhr.send("dnt=" + dnt + "&adblocker=" + adblocker + "&cookies=" + cookies + "&languagesjs=" + languagesjs + "&platform=" + platform
+        + "&plugins=" + plugins + "&screenwidth=" + screenwidth + "&screenheight=" + screenheight + "&screendepth=" + screendepth
+        + "&storagelocal=" + storagelocal + "&storagesession=" + storagesession + "&timezone=" + timezone + "&useragentjs=" + useragentjs
+        + "&mimetypes=" + mimetypes + "&webGLvendor=" + webGLvendor + "&webGLrenderer=" + webGLrenderer + "&fonts=" + fonts
+        + "&canvasprint=" + canvasprint + "&audiofingerprint=" + audiofingerprint + "&cookieid=" + {{ cookie_id }});
+
+        {#console.log("dnt="+ dnt + "&adblocker=" + adblocker + "&cookies=" + cookies + "&languagesjs=" + languagesjs#}
+        {#    + "&platform=" + platform + "&plugins=" + plugins + "&screenwidth=" + screenwidth + "&screenheight=" + screenheight)#}
+        {#xhr.send("dnt="+ dnt + "&adblocker=" + adblocker + "&cookies=" + cookies + "&languagesjs=" + languagesjs#}
+        {#    + "&platform=" + platform + "&screenwidth=" + screenwidth + "&screenheight=" + screenheight#}
+        {#    );#}
+
+        {#xhr.send("dnt="+ dnt + "&adblocker=" + adblocker + "&cookies=" + cookies + "&languagesjs=" + languagesjs#}
+        {#    + "&platform=" + platform + "&plugins=" + plugins + "&screen-width=" + screenwidth + "&screen-height=" + screenheight#}
+        {#    + "&screen-depth=" + screendepth + "&user-agent=" + useragentjs + "&cookie-id=" + {{ cookie_id }});#}
+
+        {#xhr.send("dnt=" + "dnt" + "&adblocker=" + "adblocker" + "&cookies=" + "cookies" + "&languagesjs=" + "languagesjs" + "&platform=" + "platform"#}
+        {#+ "&plugins=" + "plugins" + "&cookie_id=" + {{ cookie_id }});#}
+    }
+
+</script>
+
+{#<script data-main = "../static/main.js" src = "../static/require.js"></script>#}
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<noscript> no javascript enabled </noscript>
+{{ cookie_id }}
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "clientjs",
+  "version": "0.1.11",
+  "main": ["dist/client.min.js"],
+  "ignore": [
+    ".drone.sec",
+    ".drone.yml",
+    ".gitignore",
+    ".travis.yml",
+    "justrelease.yml",
+    "karma",
+    "LICENSE",
+    "node_modules",
+    "package-lock.json",
+    "package.json",
+    "scripts",
+    "specs",
+    "webpack.config.js"
+  ]
+}
