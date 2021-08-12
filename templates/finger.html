@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <script type="text/javascript" src="../static/client.min.js"></script>
+
 <script src="../static/prebid-ads.js"></script>
 <script type="text/javascript">
     setTimeout(myFunction, 3000)
@@ -80,7 +81,6 @@
         var screenwidth = screen.width
         var screenheight = screen.height
         var screendepth = screen.colorDepth
-        {# Misschien nog available screen info #}
         var storagelocal = client.isLocalStorage()
         var storagesession = client.isSessionStorage()
         var timezone = client.getTimeZone()
@@ -98,6 +98,8 @@
         else{
             adblocker = 0
         }
+
+
         console.log(canvasprint)
         var xhr = new XMLHttpRequest();
         xhr.open("POST", '/post', true);
@@ -111,21 +113,6 @@
             }
         }
 
-        to_send = JSON.stringify({
-            "dnt":dnt,
-            "adblocker": adblocker
-        })
-
-        var data = {};
-        data.firstname = "John";
-        data.lastname  = "Snow";
-        var json = JSON.stringify(data);
-
-        console.log(json)
-        {#xhr.send(to_send);#}
-
-        {#xhr.send(JSON.stringify({ "email": "hello@user.com", "response": { "name": "Tester" } }));#}
-        {#xhr.send("useragent=" + useragentjs + "&platform=" + platform)#}
         xhr.send("dnt=" + dnt + "&adblocker=" + adblocker + "&cookies=" + cookies + "&languagesjs=" + languagesjs + "&platform=" + platform
         + "&plugins=" + plugins + "&screenwidth=" + screenwidth + "&screenheight=" + screenheight + "&screendepth=" + screendepth
         + "&storagelocal=" + storagelocal + "&storagesession=" + storagesession + "&timezone=" + timezone + "&useragentjs=" + useragentjs

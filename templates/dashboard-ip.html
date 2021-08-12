@@ -1,5 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
+<body>
+    <header>
+      <!-- Fixed navbar -->
+      <nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-secondary">
+        <a class="navbar-brand" href="#">Device fingerprinting</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+              <a class="nav-link" a href="/dashboard-ip">Dashboard IP</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" a href="/dashboard-cookie">Dashboard cookie</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" a href="/logout">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+    <br><br><br>
+    <div class="dropdownbutton">
+          {% block dropdownbutton %} {% endblock %}
+    </div>
+          {% block content %}{% endblock %}
+
+
+        {% block visualise %}{% endblock %}
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
 <script>
 
 function SearchApplication() {
@@ -78,13 +117,14 @@ function SearchSourceIp() {
                 <input type="text" id="UserInputCookie" onkeyup="SearchApplication()" class="form-control input-lg" autocomplete="off" name="input" placeholder="Zoek op id"  autofocus>
             </div></div>
             </th>
-            <th><div style="width:100px">Ip adres
+            <th><div style="width:100px">IP adres
             <div class="form-group">
                 <input type="text" id="UserInputIP" onkeyup="SearchIP()" class="form-control input-lg" autocomplete="off" name="input" placeholder="Zoek op ids"  autofocus>
             </div></div>
             </th>
             <th>Hash</th>
             <th>Useragent http</th>
+            <th>Useragent encrypt</th>
             <th>Accept</th>
             <th>Accept encoding</th>
             <th>Accept language</th>
@@ -116,6 +156,7 @@ function SearchSourceIp() {
             <td>{{ ip.ipaddress }}</td>
             <td>{{ ip.hash }}</td>
             <td>{{ ip.useragenthttp }}</td>
+            <td>{{ ip.useragent }}</td>
             <td>{{ ip.accept }}</td>
             <td>{{ ip.accept_encoding }}</td>
             <td>{{ ip.accept_language }}</td>
@@ -136,24 +177,11 @@ function SearchSourceIp() {
             <td>{{ ip.webGLvendor }}</td>
             <td>{{ ip.webGLrenderer }}</td>
             <td><div style="height:180px; overflow-y: auto">{{ ip.fonts }}</div></td>
-{#            <td>#}
-{#                <p>#}
-{#                    <button class="btn btn-secondary" style="width: 150px" type="button" data-toggle="collapse" data-target=#getal{{loop.index}} aria-expanded="false" aria-controls="collapseExample">#}
-{#                        Meer informatie#}
-{#                    </button>#}
-{#                </p>#}
-{#                <div class="collapse" id=getal{{ loop.index }}>#}
-{#                    {{ ip.fonts }}#}
-{#                </div>#}
-        {##}
-{#            </td>#}
             <td><div style="width:100px; height:180px; overflow-y:auto;overflow-x: auto;">{{ ip.canvasprint }}</div></td>
             <td>{{ ip.audiofingerprint }}</td>
         {#    <td>{{ ip.request_header }}</td>#}
             </tr>
         {% endfor %}
     </table>
-
-
 </body>
 </html>

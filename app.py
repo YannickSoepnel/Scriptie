@@ -1,10 +1,14 @@
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response, redirect, session
 from flask_sqlalchemy import SQLAlchemy
+# from sqlalchemy import BINARY
 from flask_migrate import Migrate
 from random import randint
+from werkzeug.security import generate_password_hash, check_password_hash
+import flask_login
 from pymitter import EventEmitter
 from difflib import SequenceMatcher
 import datetime
+from cryptography.fernet import Fernet
 from datetime import timedelta
 import time
 import atexit
@@ -12,18 +16,24 @@ from time import sleep
 from apscheduler.schedulers.background import BackgroundScheduler
 import uuid
 import hashlib
+# import retention
 
-# print(datetime.datetime.now())
+key = b'UzVBvZ7o4fnpBWy7gE8yaPLU0Yto7QJZb53xQ-JQhBo='
+f = Fernet(key)
 
 ee = EventEmitter()
 
 getpost = []
 
 app = Flask(__name__)
+app.secret_key = 'ihvhbs93'
+
+#Docker
+# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:rootroot@172.19.0.2:5432/fingerprint"
+#Local
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:rootroot@localhost:5432/fingerprint"
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
 
 @ee.on("get-event", ttl=10)
 def handler1():
@@ -36,6 +46,7 @@ def handler2():
     print(getpost)
     print("post-event called")
 
+print('testing')
 
 class iptofingerprintsModel(db.Model):
     __tablename__ = 'iptofingerprint'
@@ -44,6 +55,7 @@ class iptofingerprintsModel(db.Model):
     ipaddress = db.Column(db.String())
     hash = db.Column(db.String())
     useragenthttp = db.Column(db.String())
+    useragent = db.Column(db.LargeBinary())
     accept = db.Column(db.String())
     accept_encoding = db.Column(db.String())
     accept_language = db.Column(db.String())
@@ -70,7 +82,7 @@ class iptofingerprintsModel(db.Model):
     request_header = db.Column(db.String())
     timestamp = db.Column(db.DateTime)
 
-    def __init__(self, ipaddress, hash, useragenthttp, accept, accept_encoding, accept_language, dnt, adblocker,
+    def __init__(self, ipaddress, hash, useragenthttp, useragent, accept, accept_encoding, accept_language, dnt, adblocker,
                  cookies, languagesjs, platform, plugins, screenwidth, screenheight, screendepth, storagelocal,
                  storagesession, timezone, useragentjs, mimetypes, webGLvendor, webGLrenderer, fonts, canvasprint,
                  audiofingerprint, cookie_id, request_header, timestamp):
@@ -78,6 +90,7 @@ class iptofingerprintsModel(db.Model):
         self.ipaddress = ipaddress
         self.hash = hash
         self.useragenthttp = useragenthttp
+        self.useragent = useragent
         self.accept = accept
         self.accept_encoding = accept_encoding
         self.accept_language = accept_language
@@ -171,53 +184,36 @@ class cookietofingerprintModel(db.Model):
         self.request_header = request_header
         self.timestamp = timestamp
 
-
-
-# @app.before_request
-# def load_user():
-#     # resp = make_response(render_template('finger.html'))
-#     # resp.set_cookie('somecookiename', 'I am cookie2')
-#     print('before req')
-
-def retention_date():
-    # iptofingerprintsModel.query.all()
-    pass
-    # retention_timestamp = datetime.datetime.now() - timedelta(minutes=8)
-    # print(retention_timestamp)
-    # check_date_iptofingerprints = iptofingerprintsModel.query.filter(iptofingerprintsModel.timestamp <= retention_timestamp).all()
-    # for fingerprint in check_date_iptofingerprints:
-    #     print(fingerprint.id)
-    #     iptofingerprintsModel.query.filter_by(id=fingerprint.id).delete()
-    # print(check_date_iptofingerprints)
-    # cookietofingerprintModel.query.all()
-
-
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=retention_date, trigger="interval", seconds=20)
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
+class users(db.Model):
+    id = db.Column(db.Integer, primary_key=True) # primary keys are required by SQLAlchemy
+    username = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(1000))
 
 def check_cookie_id(cookie_id):
-    fingerprints = cookietofingerprintModel.query.filter_by(cookie_id=str(cookie_id)).all()
-    if (len(fingerprints) >= 1):
-        print('bestaat al')
-        return 'bestaat'
-    else:
-        pass
+    pass
+    # fingerprints = cookietofingerprintModel.query.filter_by(cookie_id=str(cookie_id)).all()
+    # if (len(fingerprints) >= 1):
+    #     print('bestaat al')
+    #     return 'bestaat'
+    # else:
+    #     pass
 
 
 @app.route('/', methods=["GET", "POST"])
 def hello_world():
-    cookie_id = randint(0, 100)
+    # cookie_id = randint(0, 100)
+    # print(cookie_id)
+    cookie_id = uuid.uuid4()
     # cookie_id = 40
-    # print(uuid.uuid4())
+    print(uuid.uuid4())
     # print('cookie_id random')
     # print(cookie_id)
     if request.method == 'GET':
         headers = request.headers
         ip_address = request.remote_addr
         useragenthttp = headers['User-Agent']
+        useragent = f.encrypt(str.encode(headers['User-Agent']))
+        # print(f.encrypt(str.encode(headers['User-Agent'])))
         accept = headers['Accept']
         accept_encoding = headers['Accept-Encoding']
         accept_language = headers['Accept-Language']
@@ -244,24 +240,56 @@ def hello_world():
         hash = hashlib.md5(str([headers, ip_address, useragenthttp, accept, accept_encoding, accept_language, dnt, adblocker, cookies,
                                             languagesjs, platform, plugins, screenwidth, screenheight, screendepth, storagelocal, storagesession,
                                             timezone, useragentjs, mimetypes, webGLvendor, webGLrenderer, fonts, canvasprint, audiofingerprint]).encode()).hexdigest()
-        print(hash)
+
+        ip_address = request.remote_addr
+        useragenthttp = headers['User-Agent']
+        accept = headers['Accept']
+        accept_encoding = headers['Accept-Encoding']
+        accept_language = headers['Accept-Language']
+        dnt = "NoJS"
+        adblocker = "NoJS"
+        cookies = "NoJS"
+        languagesjs = "NoJS"
+        platform = "NoJS"
+        plugins = "NoJS"
+        screenwidth = "NoJS"
+        screenheight = "NoJS"
+        screendepth = "NoJS"
+        storagelocal = "NoJS"
+        storagesession = "NoJS"
+        timezone = "NoJS"
+        useragentjs = "NoJS"
+        mimetypes = "NoJS"
+        webGLvendor = "NoJS"
+        webGLrenderer = "NoJS"
+        fonts = "NoJS"
+        canvasprint = "NoJS"
+        audiofingerprint = "NoJS"
+        f.encrypt(str.encode(headers['User-Agent']))
+
         if (not request.cookies):
             # Checken of cookie_ID voorkomt in database: Zoja genereer nieuwe cookie_ID,
             # Zo niet gebruik dan deze cookie_ID
-            if(check_cookie_id(cookie_id) == 'bestaat'):
+            while(len(cookietofingerprintModel.query.filter_by(cookie_id=str(cookie_id)).all()) >= 1):
                 cookie_id = randint(0, 100)
-                # print('eerste keer bestaat al')
-            if(check_cookie_id(cookie_id) == 'bestaat'):
-                # print('tweede keer bestaat al')
-                cookie_id = randint(0, 100)
-            else:
+            # fingerprints = cookietofingerprintModel.query.filter_by(cookie_id=str(cookie_id)).all()
+            # # if (len(fingerprints) >= 1):
+            # #     print('bestaat al')
+            # #     return 'bestaat'
+            # if(check_cookie_id(cookie_id) == 'bestaat'):
+            #     cookie_id = randint(0, 100)
+            #     # print('eerste keer bestaat al')
+            # if(check_cookie_id(cookie_id) == 'bestaat'):
+            #     # print('tweede keer bestaat al')
+            #     cookie_id = randint(0, 100)
+            # else:
                 print('not cookie')
                 print(cookie_id)
             #Fingerprint in database zetten met request_header = "GET"
             check_ip_fingerprints = iptofingerprintsModel.query.filter_by(ipaddress=ip_address,
                                                                           request_header="GET").all()
             if (len(check_ip_fingerprints) == 0):
-                new_ip_fingerprint = iptofingerprintsModel(hash=hash, ipaddress=ip_address, useragenthttp=useragenthttp, accept=accept, accept_encoding=accept_encoding,
+                new_ip_fingerprint = iptofingerprintsModel(hash=hash, ipaddress=ip_address, useragenthttp=f.encrypt(str.encode(useragenthttp)), accept=accept, accept_encoding=accept_encoding,
                                                            accept_language=accept_language, dnt=dnt, adblocker=adblocker, cookies=cookies, languagesjs=languagesjs,
                                                            platform=platform, plugins=plugins, screenwidth=screenwidth, screenheight=screenheight, screendepth=screendepth,
                                                            storagelocal=storagelocal, storagesession=storagesession, timezone=timezone, useragentjs=useragentjs,
@@ -311,18 +339,19 @@ def hello_world():
                                                            audiofingerprint=audiofingerprint,cookie_id=cookie_id,request_header="GET", timestamp=timestamp)
             db.session.add(new_cookie_fingerprint)
             db.session.commit()
+            # resp = make_response(render_template('tinka-new/Tinka.html', cookie_id=cookie_id))
             resp = make_response(render_template('finger.html', cookie_id=cookie_id))
             resp.set_cookie('fingerprint', str(cookie_id))
             print('cookie geset met ID:' + str(cookie_id))
             return resp
         else:
-            # Ophalen cookie_id uit cookie. Vervolgens kijken of fingerprint overeenkomt met fingerprint die erstaat
+            # Ophalen cookie_id uit cookie. Vervolgens kijken of fingerprint overeenkomt met fingerprint die er staat
             # Zo niet plaats GET fingerprint in de tabel cookie DB.
             cookie_id = request.cookies['fingerprint']
             check_ip_fingerprints = iptofingerprintsModel.query.filter_by(ipaddress=ip_address, cookie_id=cookie_id,
                                                                           request_header="GET").all()
             if (len(check_ip_fingerprints) == 0):
-                new_ip_fingerprint = iptofingerprintsModel(hash=hash, ipaddress=ip_address, useragenthttp=useragenthttp, accept=accept, accept_encoding=accept_encoding,
+                new_ip_fingerprint = iptofingerprintsModel(hash=hash, ipaddress=ip_address, useragenthttp=useragenthttp, useragent=useragent, accept=accept, accept_encoding=accept_encoding,
                                                            accept_language=accept_language, dnt=dnt, adblocker=adblocker, cookies=cookies, languagesjs=languagesjs,
                                                            platform=platform, plugins=plugins, screenwidth=screenwidth, screenheight=screenheight, screendepth=screendepth,
                                                            storagelocal=storagelocal, storagesession=storagesession, timezone=timezone, useragentjs=useragentjs,
@@ -387,6 +416,7 @@ def hello_world():
             except:
                 pass
             db.session.commit() #Nieuwe waardes committen
+            # resp = make_response(render_template('tinka-new/tinka.html', cookie_id=cookie_id))
             resp = make_response(render_template('finger.html', cookie_id=cookie_id))
             print(request.cookies['fingerprint'])
             print('GET')
@@ -397,6 +427,56 @@ def hello_world():
         # db.session.commit()
     # return render_template('finger.html')
 
+@app.route('/login', methods=["POST", "GET"])
+def login_page():
+    msg = ''
+    if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = users.query.filter_by(username=username).first()
+        if(user is None):
+            msg = 'Geen geldige gebruikersnaam of wachtwoord!'
+        elif(check_password_hash(user.password, password)):
+            session['loggedin'] = True
+            session['username'] = username
+            print('ingelogd')
+            return redirect(('/dashboard-ip'))
+        else:
+            msg = 'Geen geldige gebruikersnaam of wachtwoord!'
+    # if(user is None):
+    #     pass
+    # else:
+    #     if(not user or not check_password_hash(user.password, password)):
+    #         flash('Please check your login details and try again.')
+    #     else:
+    #         print(username)
+    #         print(password)
+    return render_template('login.html', msg=msg)
+
+@app.route('/key', methods=["POST"])
+def get_key():
+    if request.method == 'POST':
+        key = request.form['dnt']
+        print(key)
+        print(type(key))
+
+    return request.method
+
+@app.route('/test')
+def testing():
+    cookiefingerprint = cookietofingerprintModel.query.all()
+    ipfingerprint = iptofingerprintsModel.query.all()
+
+    for finger in ipfingerprint:
+        print(finger.useragent)
+        print(type(finger.useragent))
+        print(f.decrypt(finger.useragent))
+        # token = str.encode(finger.useragent)
+        # print(token)
+        # print(type(token))
+        # print(f.decrypt(token))
+    return 'ok'
+
 @app.route('/post', methods=["POST"])
 def get_js():
     if request.method == 'POST':
@@ -405,7 +485,8 @@ def get_js():
         cookie_id = request.form['cookieid']
         headers = request.headers
         useragenthttp = headers['User-Agent']
-        accept = headers['Accept']
+        # accept = headers['Accept']
+        # print(accept)
         accept_encoding = headers['Accept-Encoding']
         accept_language = headers['Accept-Language']
         dnt = request.form['dnt']
@@ -432,14 +513,17 @@ def get_js():
         # Controleren of cookie_ID voor komt in database
         # Zoja
         fingerprint_ip = iptofingerprintsModel.query.filter_by(ipaddress=ip_address, cookie_id=str(cookie_id)).first()
-
+        accept = fingerprint_ip.accept
         fingerprint_ip.hash = hashlib.md5(str([headers, ip_address, useragenthttp, accept, accept_encoding, accept_language, dnt, adblocker, cookies,
                  languagesjs, platform, plugins, screenwidth, screenheight, screendepth, storagelocal, storagesession,
                  timezone, useragentjs, mimetypes, webGLvendor, webGLrenderer, fonts, canvasprint,
                  audiofingerprint]).encode()).hexdigest()
         fingerprint_ip.ipaddress = request.remote_addr
-        fingerprint_ip.useragenthttp = headers['User-Agent']
-        fingerprint_ip.accept = headers['Accept']
+        # fingerprint_ip.useragenthttp = headers['User-Agent']
+        fingerprint_ip.useragenthttp = f.encrypt(str.encode(headers['User-Agent']))
+        print('okay')
+        print(f.encrypt(str.encode(headers['User-Agent'])))
+        fingerprint_ip.accept = accept
         fingerprint_ip.accept_encoding = headers['Accept-Encoding']
         fingerprint_ip.accept_language = headers['Accept-Language']
         fingerprint_ip.dnt = request.form['dnt']
@@ -473,7 +557,7 @@ def get_js():
             pass
         else:
             headers = request.headers
-            new_fingerprintstring = [headers['User-Agent'], headers['Accept'], headers['Accept-Encoding'], headers['Accept-Language'],
+            new_fingerprintstring = [headers['User-Agent'], accept, headers['Accept-Encoding'], headers['Accept-Language'],
                                     request.form['dnt'], request.form['adblocker'], request.form['cookies'], request.form['languagesjs'],
                                     request.form['platform'], request.form['plugins'], request.form['screenwidth'], request.form['screenheight'],
                                     request.form['screendepth'], request.form['storagelocal'], request.form['storagesession'], request.form['timezone'],
@@ -501,13 +585,13 @@ def get_js():
 
         fingerprint_cookie = cookietofingerprintModel.query.filter_by(cookie_id=str(cookie_id)).first()
 
-        fingerprint_ip.hash = hashlib.md5(str([headers, ip_address, useragenthttp, accept, accept_encoding, accept_language, dnt, adblocker, cookies,
+        fingerprint_cookie.hash = hashlib.md5(str([headers, ip_address, useragenthttp, accept, accept_encoding, accept_language, dnt, adblocker, cookies,
                  languagesjs, platform, plugins, screenwidth, screenheight, screendepth, storagelocal, storagesession,
                  timezone, useragentjs, mimetypes, webGLvendor, webGLrenderer, fonts, canvasprint,
                  audiofingerprint]).encode()).hexdigest()
         fingerprint_cookie.ipaddress = request.remote_addr
         fingerprint_cookie.useragenthttp = headers['User-Agent']
-        fingerprint_cookie.accept = headers['Accept']
+        fingerprint_cookie.accept = accept
         fingerprint_cookie.accept_encoding = headers['Accept-Encoding']
         fingerprint_cookie.accept_language = headers['Accept-Language']
         fingerprint_cookie.dnt = request.form['dnt']
@@ -534,10 +618,51 @@ def get_js():
         db.session.commit()
     return request.method
 
-@app.route('/dashboard')
-def dashboardhtml():
-    ipadressen = iptofingerprintsModel.query.all()
-    return render_template('dashboard.html', ipadressen=ipadressen)
+@app.route('/dashboard-ip')
+def dashboard_ip():
+    string = 'okay'
+    token = f.encrypt(str.encode(string))
+    if 'loggedin' in session:
+        ipadressen = iptofingerprintsModel.query.all()
+        # for fingerprint in ipadressen:
+            # fingerprint.ipaddress = str(f.decrypt(fingerprint.ipaddress),'utf-8')
+            # fingerprint.useragent = str(f.decrypt(fingerprint.useragent),'utf-8')
+            # print(fingerprint.useragent)
+    # ids = 27
+    # iptofingerprintsModel.query.filter_by(id=ids).delete()
+    # db.session.commit()
+    # print('ok')
+        return render_template('dashboard-ip.html', ipadressen=ipadressen, token=token)
+    else:
+        return redirect('/login')
+
+@app.route('/dashboard-cookie')
+def dashboard_cookie():
+    if 'loggedin' in session:
+        cookiefingerprint = cookietofingerprintModel.query.all()
+    # ids = 27
+    # iptofingerprintsModel.query.filter_by(id=ids).delete()
+    # db.session.commit()
+    # print('ok')
+        return render_template('dashboard-cookie.html', cookiefingerprint=cookiefingerprint)
+    else:
+        return redirect('/login')
+
+@app.route('/tinka')
+def tinkaweb():
+    return render_template('tinka-new/tinka.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('loggedin', None)
+    session.pop('username', None)
+    return redirect('/login')
+
+# retention.retention_date()
+# if __name__ == '__main__':
+#     app.run(host="0.0.0.0",
+#             port=5000,
+#             debug=True)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0",
