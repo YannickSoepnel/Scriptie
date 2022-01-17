@@ -18,7 +18,7 @@ import uuid
 import hashlib
 # import retention
 
-key = b'UzVBvZ7o4fnpBWy7gE8yaPLU0Yto7QJZb53xQ-JQhBo='
+key = ''
 f = Fernet(key)
 
 ee = EventEmitter()
@@ -29,9 +29,9 @@ app = Flask(__name__)
 app.secret_key = 'ihvhbs93'
 
 #Docker
-# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:rootroot@172.19.0.2:5432/fingerprint"
+# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://:@172.19.0.2:5432/fingerprint"
 #Local
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:rootroot@localhost:5432/fingerprint"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://:@localhost:5432/fingerprint"
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -45,8 +45,6 @@ def handler1():
 def handler2():
     print(getpost)
     print("post-event called")
-
-print('testing')
 
 class iptofingerprintsModel(db.Model):
     __tablename__ = 'iptofingerprint'
